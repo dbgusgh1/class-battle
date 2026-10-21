@@ -493,7 +493,7 @@ document.addEventListener('click', async e=>{
       case 'joinProjector': await joinRoom(S.ui.joinCode,S.ui.joinPass,'projector'); break;
       case 'joinTeacher': if(prompt('교사 비밀번호')!==CONFIG.teacherPassword){ alert('비밀번호가 올바르지 않습니다.'); break; } await joinRoom(S.ui.joinCode,S.ui.joinPass,'teacher'); break;
       case 'leave': if(S.role!=='teacher' || confirm('교사 화면에서 나갈까요? (방은 유지되며, 방 코드와 비밀번호로 다시 들어올 수 있습니다)')) leave(); break;
-      case 'view': if(d.v==='teacher' && S.view!=='teacher' && prompt('교사 비밀번호')!==CONFIG.teacherPassword){ alert('비밀번호가 올바르지 않습니다.'); break; } S.view=d.v; render(); break;
+      case 'view': if(d.v==='teacher' && S.role!=='teacher' && prompt('교사 비밀번호')!==CONFIG.teacherPassword){ alert('비밀번호가 올바르지 않습니다.'); break; } S.view=d.v; render(); break;
       case 'mine': await mine(d.k); break;
       case 'buy': await buy(d.k); break;
       case 'attack': rollGame(parseInt(d.i)); break;
