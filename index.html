@@ -72,6 +72,17 @@
   .center{text-align:center}
   .hp0{filter:grayscale(1);opacity:.6}
   details summary{cursor:pointer;font-weight:700}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media(max-width:700px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{border:2px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+  .tile .nm{font-size:13px;font-weight:700}
+  .tile .n{font-size:30px;font-weight:900;margin:2px 0}
+  .tile .bt{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .tile .bt button{min-width:36px;height:36px;font-weight:800;padding:0 8px}
+  .tile.t-res{border-color:#2563eb;background:#eff6ff}.tile.t-res .n{color:#2563eb}
+  .tile.t-atk{border-color:#ef4444;background:#fef2f2}.tile.t-atk .n{color:#ef4444}
+  .tile.t-shd{border-color:#7c3aed;background:#f5f3ff}.tile.t-shd .n{color:#7c3aed}
+  .tile.t-hp{border-color:#16a34a;background:#f0fdf4}.tile.t-hp .n{color:#16a34a}
   #err{position:fixed;left:10px;bottom:10px;background:#fee;color:#b00;border:1px solid #faa;border-radius:10px;padding:6px 10px;font:12px/1.4 monospace;display:none;z-index:99;max-width:90vw}
 </style>
 </head>
@@ -304,6 +315,10 @@ async function swapResources(a,b){
   await txTeams(ts=>{ const A=ts[tkey(a)]||newTeam(), B=ts[tkey(b)]||newTeam(); const tmp=A.resource||0; A.resource=B.resource||0; B.resource=tmp; ts[tkey(a)]=A; ts[tkey(b)]=B; });
   log(`AMAZING 효과: 팀 ${a} ↔ 팀 ${b} 자원 교환`); tlog(a,`AMAZING: 팀 ${b}와 자원 교환`); tlog(b,`AMAZING: 팀 ${a}와 자원 교환`); addEvent(`✨ AMAZING 발동: 팀 ${a}와 팀 ${b}의 자원이 교환됨`);
 }
+async function unfreezeTeam(i){
+  await txTeam(i,t=>{ t.freezeUntil=0; });
+  log(`교사: 팀 ${i} 자원생산 정지 해제`); tlog(i,'자원생산 정지가 해제되었습니다'); addEvent(`▶️ 팀 ${i} 자원생산 정지 해제`);
+}
 async function freezeTeam(i){
   await txTeam(i,t=>{ t.freezeUntil=now()+FREEZE_MS; });
   log(`UNBELIEVABLE 발동: 팀 ${i} 자원생산 3분 정지`); tlog(i,'UNBELIEVABLE 효과: 자원생산 3분 정지'); addEvent(`⏱️ 팀 ${i} 자원생산 3분 정지 상태`);
@@ -365,6 +380,7 @@ function teamCard(i,size){ const t=T(i); const fz=frozen(i); const dead=(t.hp!=n
   return `<div class="team-card ${dead?'hp0':''}" style="border-color:${TEAM_COLORS[i-1]}"><div class="nm" style="color:${TEAM_COLORS[i-1]}">팀 ${i} ${t.connected?'<span class="badge b-green" title="접속 중">●</span>':'<span class="badge" title="미접속">○</span>'}</div>${hpRing(t.hp,size)}${bars(t)}${fz?`<div class="badge b-red" style="margin-top:6px">⏱ 생산정지 ${Math.ceil(fz/60)}분</div>`:''}</div>`; }
 function classroomMap(){ const n=teamCount(); return `<div class="map"><div class="desk">[교탁]</div><div class="seats" style="grid-template-columns:repeat(${n<=4?2:3},1fr)">${teamIdx().map(i=>`<div class="seat" style="background:${TEAM_BG[i-1]};color:${TEAM_COLORS[i-1]}">팀 ${i}</div>`).join('')}</div><div class="muted">교실 팀 배치 안내도</div></div>`; }
 function logBox(list,icon){ if(!list.length) return `<div class="log"><div class="muted">기록 없음</div></div>`; return `<div class="log">${list.map(l=>`<div>${icon||'•'} <span class="muted">${fmt(l.ts)}</span> ${esc(l.text)}</div>`).join('')}</div>`; }
+function boxLegend(){ return `<div class="info" style="margin-top:8px"><b>🎁 히든랜덤박스 종류</b><br>${Object.entries(BOX).map(([k,b])=>`${k}. <b>${b.name}</b> — ${b.desc}`).join('<br>')}</div>`; }
 function requestPanel(){
   const f=S.ui.pendingFilter; const entries=Object.entries(S.pending).sort((a,b)=>(a[1].ts||0)-(b[1].ts||0)).filter(([,p])=>f==='all'||p.type===f);
   const fb=(k,l,cls)=>`<button class="sm ${f===k?cls:''}" data-a="filter" data-k="${k}">${l}</button>`;
@@ -439,13 +455,13 @@ function renderStudent(){
 function renderProjector(){
   return `<div class="cols"><div class="card center">${classroomMap()}</div>${requestPanel()}</div>
   <div class="grid" style="grid-template-columns:repeat(${Math.min(teamCount(),3)},1fr)">${teamIdx().map(i=>teamCard(i,130)).join('')}</div>
-  <div class="cols" style="margin-top:12px"><div class="card"><h2>전체 로그</h2>${logBox(S.logs)}</div><div class="card"><h2>전투 이벤트</h2>${logBox(S.events,'🔥')}</div></div>`;
+  <div class="cols" style="margin-top:12px"><div class="card"><h2>전체 로그</h2>${logBox(S.logs)}${boxLegend()}</div><div class="card"><h2>전투 이벤트</h2>${logBox(S.events,'🔥')}</div></div>`;
 }
 
 function renderTeacher(){
   const m=S.meta||{}; const ct=S.ui.controlTeam; const t=T(ct); const fz=frozen(ct);
   const sel=(name,val,skipA)=>`<select data-in="${name}">${teamIdx().map(i=>`<option value="${i}" ${val==i?'selected':''}>팀 ${i}</option>`).join('')}</select>`;
-  const adj=(f,d)=>`<button class="sm" data-a="adjust" data-f="${f}" data-d="${d}">${{hp:'HP',attack:'공격권',shield:'방어권',resource:'자원'}[f]} ${d>0?'+':''}${d}</button>`;
+  const tb=(f,d)=>`<button data-a="adjust" data-f="${f}" data-d="${d}">${d>0?'+':'−'}${Math.abs(d)===1?'':Math.abs(d)}</button>`;
   return `<div class="card"><div class="row" style="justify-content:space-between">
     <div><h2 style="margin:0">교사용 대시보드</h2><div class="muted">방 코드 <b style="font-size:16px;color:#111">${S.code}</b> · 비밀번호 <b>${esc(S.pass)}</b> · ${m.status==='ended'?'<span class="badge b-red">종료됨</span>':'<span class="badge b-green">진행 중</span>'}</div></div>
     <div class="row"><button class="btn-yellow sm" data-a="lock">${m.lock===false?'🔓 잠금 해제 (학생: 팀 선택 가능)':'🔒 잠금 (학생: 자기 팀만)'}</button><button class="sm btn-green" data-a="endSave" ${S.ui.saving?'disabled':''}>${S.ui.saving?'저장 중…':'🏁 게임 종료 & 결과 저장'}</button><button class="sm" data-a="dl">로그 저장</button><button class="sm" data-a="reset">초기화</button><button class="sm btn-red" data-a="delete">방 삭제</button></div></div></div>
@@ -456,19 +472,21 @@ function renderTeacher(){
   <div class="grid" style="grid-template-columns:repeat(${Math.min(teamCount(),3)},1fr)">${teamIdx().map(i=>teamCard(i,100)).join('')}</div>
   <div class="card" style="margin-top:12px"><h2>교사 전용 자원 / 능력 조정</h2>
     <div class="row" style="margin-bottom:8px"><span class="muted">대상 팀:</span>${teamIdx().map(i=>`<button class="sm ${ct===i?'btn-blue':''}" data-a="ctrl" data-i="${i}">팀 ${i}</button>`).join('')}</div>
-    <div class="grid g3">
-      <div class="info"><b>팀 ${ct} 현재 상태</b><br>HP ${t.hp==null?STARTING_HP:t.hp} · 공격권 ${t.attack||0} · 방어권 ${t.shield||0} · 자원 ${t.resource||0}<br>공격 성공 ${t.attackSuccess||0}회 · 올클리어 ${t.allClearCount||0}회${fz?`<br><span style="color:#b91c1c">자원생산 정지 (${Math.ceil(fz/60)}분 남음)</span>`:''}</div>
-      <div><b style="font-size:13px">자원 조정</b><div class="row" style="margin-top:4px">${adj('resource',1)}${adj('resource',-1)}${adj('resource',5)}${adj('resource',-5)}${adj('resource',10)}${adj('resource',-10)}</div></div>
-      <div><b style="font-size:13px">능력 조정</b><div class="row" style="margin-top:4px">${adj('attack',1)}${adj('attack',-1)}${adj('shield',1)}${adj('shield',-1)}${adj('hp',1)}${adj('hp',-1)}</div></div>
+    <div class="tiles">
+      <div class="tile t-res"><div class="nm">💎 자원</div><div class="n">${t.resource||0}</div><div class="bt">${tb('resource',-5)}${tb('resource',-1)}${tb('resource',1)}${tb('resource',5)}</div></div>
+      <div class="tile t-atk"><div class="nm">⚔️ 공격권</div><div class="n">${t.attack||0}</div><div class="bt">${tb('attack',-1)}${tb('attack',1)}</div></div>
+      <div class="tile t-shd"><div class="nm">🛡️ 방어권</div><div class="n">${t.shield||0}</div><div class="bt">${tb('shield',-1)}${tb('shield',1)}</div></div>
+      <div class="tile t-hp"><div class="nm">❤️ HP</div><div class="n">${t.hp==null?STARTING_HP:t.hp}</div><div class="bt">${tb('hp',-1)}${tb('hp',1)}</div></div>
     </div>
+    <div class="muted" style="margin-top:6px">팀 ${ct} · 공격 성공 ${t.attackSuccess||0}회 · 전체 채굴 ${t.allClearCount||0}회${fz?` · <span style="color:#b91c1c">자원생산 정지 (${Math.ceil(fz/60)}분 남음)</span>`:''}</div>
     <div class="cols" style="margin-top:10px">
       <div class="info"><b>✨ AMAZING: 자원 바꾸기</b><div class="row" style="margin-top:4px">${sel('swapA',S.ui.swapA)} ↔ ${sel('swapB',S.ui.swapB)} <button class="sm btn-purple" data-a="swap">자원 바꾸기</button></div></div>
-      <div class="info"><b>⏱️ UNBELIEVABLE: 자원생산 3분 정지</b><div class="row" style="margin-top:4px">${sel('freezeT',S.ui.freezeT)} <button class="sm btn-red" data-a="freeze">정지(3분)</button></div></div>
+      <div class="info"><b>⏱️ UNBELIEVABLE: 자원생산 3분 정지</b><div class="row" style="margin-top:4px">${sel('freezeT',S.ui.freezeT)} <button class="sm btn-red" data-a="freeze">정지(3분)</button> <button class="sm" data-a="unfreeze" ${frozen(parseInt(S.ui.freezeT))?'':'disabled'}>정지 해제</button></div></div>
     </div></div>
   <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🔀 랜덤 팀 편성</h2><span class="row"><input type="number" min="1" max="60" style="width:80px" data-in="students" value="${S.ui.students}" title="학생 수"> 명 중 NPC <input type="number" min="0" max="30" style="width:70px" data-in="npc" value="${S.ui.npc}"> 명 <button class="btn-dark sm" data-a="shuffle">섞기</button></span></div>
     <div class="muted">학생 번호를 무작위로 섞어 NPC를 먼저 뽑고, 나머지를 ${teamCount()}개 팀에 고르게 나눕니다.</div>
     ${S.ui.randomTeams?`<div class="grid gauto" style="margin-top:8px">${S.ui.randomTeams.teams.map((arr,k)=>`<div class="info" style="border-color:${TEAM_COLORS[k]}"><b style="color:${TEAM_COLORS[k]}">팀 ${k+1}</b> (${arr.length}명)<br>${arr.join(', ')||'—'}</div>`).join('')}<div class="info"><b>NPC</b> (${S.ui.randomTeams.npc.length}명)<br>${S.ui.randomTeams.npc.join(', ')||'—'}</div></div>`:''}</div>
-  <div class="cols"><div class="card"><h2>전체 로그</h2>${logBox(S.logs)}</div><div class="card"><h2>전투 이벤트</h2>${logBox(S.events,'🔥')}</div></div>`;
+  <div class="cols"><div class="card"><h2>전체 로그</h2>${logBox(S.logs)}${boxLegend()}</div><div class="card"><h2>전투 이벤트</h2>${logBox(S.events,'🔥')}</div></div>`;
 }
 
 function render(){
@@ -511,6 +529,7 @@ document.addEventListener('click', async e=>{
       case 'adjust': await adjust(S.ui.controlTeam,d.f,parseInt(d.d)); break;
       case 'swap': await swapResources(parseInt(S.ui.swapA),parseInt(S.ui.swapB)); break;
       case 'freeze': await freezeTeam(parseInt(S.ui.freezeT)); break;
+      case 'unfreeze': await unfreezeTeam(parseInt(S.ui.freezeT)); break;
       case 'modalPick': { const m=S.ui.teacherModal; S.ui.teacherModal=null; if(m.type==='swap') await swapResources(m.team,parseInt(d.i)); else await freezeTeam(parseInt(d.i)); render(); break; }
       case 'modalClose': S.ui.teacherModal=null; render(); break;
       case 'lock': toggleLock(); break;
