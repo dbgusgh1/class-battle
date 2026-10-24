@@ -61,7 +61,11 @@
   .modal .box{background:#fff;border-radius:16px;padding:18px;max-width:420px;width:100%;text-align:center;animation:pop .25s ease}
   @keyframes pop{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
   .flash{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(17,24,39,.9);color:#fff;padding:8px 14px;border-radius:99px;z-index:60;font-size:14px;animation:pop .2s ease}
-  .qrbox{display:inline-flex;flex-direction:column;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+  .qrwrap{display:flex;flex-wrap:wrap;gap:40px;justify-content:center;margin-top:14px;padding:10px 0}
+  .qrbox{display:inline-flex;flex-direction:column;align-items:center;gap:8px;border:2px solid var(--line);border-radius:14px;padding:16px;background:#fff}
+  .qrbox b{font-size:16px}
+  .roomkey{display:inline-block;margin-left:10px;color:#dc2626;font-size:16px;font-weight:800;white-space:nowrap}
+  .roomkey b{font-size:19px;letter-spacing:1px}
   .qr img,.qr canvas{display:block}
   .map{display:inline-flex;flex-direction:column;align-items:center;gap:6px}
   .map .desk{padding:4px 14px;border:1px solid var(--line);border-radius:99px;background:#fff;font-size:13px}
@@ -463,10 +467,10 @@ function renderTeacher(){
   const sel=(name,val,skipA)=>`<select data-in="${name}">${teamIdx().map(i=>`<option value="${i}" ${val==i?'selected':''}>팀 ${i}</option>`).join('')}</select>`;
   const tb=(f,d)=>`<button data-a="adjust" data-f="${f}" data-d="${d}">${d>0?'+':'−'}${Math.abs(d)===1?'':Math.abs(d)}</button>`;
   return `<div class="card"><div class="row" style="justify-content:space-between">
-    <div><h2 style="margin:0">교사용 대시보드</h2><div class="muted">방 코드 <b style="font-size:16px;color:#111">${S.code}</b> · 비밀번호 <b>${esc(S.pass)}</b> · ${m.status==='ended'?'<span class="badge b-red">종료됨</span>':'<span class="badge b-green">진행 중</span>'}</div></div>
+    <div><h2 style="margin:0">교사용 대시보드</h2><div class="muted">${m.status==='ended'?'<span class="badge b-red">종료됨</span>':'<span class="badge b-green">진행 중</span>'}</div></div>
     <div class="row"><button class="btn-yellow sm" data-a="lock">${m.lock===false?'🔓 잠금 해제 (학생: 팀 선택 가능)':'🔒 잠금 (학생: 자기 팀만)'}</button><button class="sm btn-green" data-a="endSave" ${S.ui.saving?'disabled':''}>${S.ui.saving?'저장 중…':'🏁 게임 종료 & 결과 저장'}</button><button class="sm" data-a="dl">로그 저장</button><button class="sm" data-a="reset">초기화</button><button class="sm btn-red" data-a="delete">방 삭제</button></div></div></div>
-  <div class="card"><details ${S.ui.qrOpen?'open':''}><summary>📱 접속 QR코드 / 링크 <span class="muted">(학생 태블릿 카메라로 찍으면 바로 자기 팀으로 들어옵니다)</span></summary>
-    <div class="row" style="margin-top:10px;align-items:flex-start">${teamIdx().map(i=>`<div class="qrbox"><b style="color:${TEAM_COLORS[i-1]}">팀 ${i}</b><div class="qr" data-url="${esc(teamUrl(i))}"></div><button class="sm" data-a="copy" data-url="${esc(teamUrl(i))}">링크 복사</button></div>`).join('')}<div class="qrbox"><b>관전자(프로젝터)</b><div class="qr" data-url="${esc(projUrl())}"></div><button class="sm" data-a="copy" data-url="${esc(projUrl())}">링크 복사</button></div></div>
+  <div class="card"><details ${S.ui.qrOpen?'open':''}><summary>📱 접속 QR코드 / 링크 <span class="muted">(학생 태블릿 카메라로 찍으면 바로 자기 팀으로 들어옵니다)</span> <span class="roomkey">방 코드 <b>${S.code}</b> · 비밀번호 <b>${esc(S.pass)}</b></span></summary>
+    <div class="qrwrap">${teamIdx().map(i=>`<div class="qrbox"><b style="color:${TEAM_COLORS[i-1]}">팀 ${i}</b><div class="qr" data-url="${esc(teamUrl(i))}"></div><button class="sm" data-a="copy" data-url="${esc(teamUrl(i))}">링크 복사</button></div>`).join('')}<div class="qrbox"><b>관전자(프로젝터)</b><div class="qr" data-url="${esc(projUrl())}"></div><button class="sm" data-a="copy" data-url="${esc(projUrl())}">링크 복사</button></div></div>
     ${location.protocol==='file:'?'<div class="warn" style="margin-top:8px">지금은 파일을 직접 연 상태라 QR이 다른 기기에서 열리지 않습니다. 인터넷에 올린 주소로 열어야 QR이 작동합니다.</div>':''}</details></div>
   ${requestPanel()}
   <div class="grid" style="grid-template-columns:repeat(${Math.min(teamCount(),3)},1fr)">${teamIdx().map(i=>teamCard(i,100)).join('')}</div>
@@ -498,7 +502,7 @@ function render(){
   const active=document.activeElement; const keep = active && active.dataset && active.dataset.in ? {name:active.dataset.in, pos:active.selectionStart} : null;
   $('#app').innerHTML = topbar()+body+modal()+(S.flash?`<div class="flash">${esc(S.flash)}</div>`:'');
   if(keep){ const el=document.querySelector(`[data-in="${keep.name}"]`); if(el){ el.focus(); try{ el.setSelectionRange(keep.pos,keep.pos);}catch(_){} } }
-  document.querySelectorAll('.qr').forEach(el=>{ if(!el.dataset.done){ el.dataset.done='1'; try{ new QRCode(el,{text:el.dataset.url,width:120,height:120,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.textContent='QR 생성 실패'; } } });
+  document.querySelectorAll('.qr').forEach(el=>{ if(!el.dataset.done){ el.dataset.done='1'; try{ new QRCode(el,{text:el.dataset.url,width:150,height:150,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ el.textContent='QR 생성 실패'; } } });
 }
 
 /* ---------- 이벤트 ---------- */
