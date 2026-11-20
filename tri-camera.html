@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>트라이 아레나 · 카메라</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --bg:#0b1026; --bg2:#121a3a; --card:#18224a; --card2:#1f2b5c; --line:#2c3b78;
+  --tx:#eef2ff; --mut:#9aa6d6; --pri:#4f8cff; --acc:#ffcc33; --ok:#2fd27a; --bad:#ff4d6d; --pur:#a66bff; --cy:#2de2e6;
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:'Noto Sans KR',system-ui,sans-serif;overflow:hidden;touch-action:manipulation}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+input{font-family:inherit}
+.jua{font-family:'Jua','Noto Sans KR',sans-serif;font-weight:400}
+.scr{position:fixed;inset:0;display:none;flex-direction:column}
+.scr.on{display:flex}
+.hide{display:none!important}
+/* ---------- 로그인 ---------- */
+#scrLogin{align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#2a3a8a 0,#0b1026 60%)}
+.logo{font-size:clamp(34px,6vw,60px);text-align:center;line-height:1.1;margin-bottom:6px;text-shadow:0 4px 0 #1b2560,0 0 30px #4f8cff88}
+.logo b{color:var(--acc)}
+.sub{color:var(--mut);text-align:center;margin-bottom:24px}
+.loginBox{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:26px;width:min(420px,92vw);box-shadow:0 20px 60px #0008}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{color:var(--mut);font-size:14px}
+.field input{background:var(--bg2);border:2px solid var(--line);border-radius:12px;padding:14px;font-size:22px;color:var(--tx);text-align:center;outline:none}
+.field input:focus{border-color:var(--pri)}
+.btn{background:var(--pri);border-radius:14px;padding:14px 18px;font-size:18px;font-weight:700;box-shadow:0 5px 0 #2a55b8;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #2a55b8}
+.btn.big{width:100%;font-size:22px;padding:16px}
+.btn.y{background:var(--acc);color:#2a1f00;box-shadow:0 5px 0 #b38a00}
+.btn.g{background:var(--ok);color:#03240f;box-shadow:0 5px 0 #18874a}
+.btn.r{background:var(--bad);box-shadow:0 5px 0 #a3243c}
+.btn.p{background:var(--pur);box-shadow:0 5px 0 #6a3bb3}
+.btn.d{background:var(--card2);box-shadow:0 5px 0 #0d1433}
+.btn.sm{padding:8px 12px;font-size:15px;border-radius:10px}
+.btn:disabled{opacity:.45}
+.link{background:none;color:var(--mut);text-decoration:underline;margin-top:14px;font-size:14px}
+.demoTag{position:fixed;left:8px;bottom:8px;background:#ff4d6d;color:#fff;font-size:12px;padding:4px 8px;border-radius:8px;z-index:99}
+/* ---------- 로비 ---------- */
+#scrLobby{background:linear-gradient(180deg,#0e1533,#0b1026)}
+.top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0a0f26;border-bottom:2px solid var(--line);flex-wrap:wrap}
+.top .nm{font-size:20px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700;display:flex;gap:6px;align-items:center;font-size:15px}
+.chip.tp{color:var(--acc)} .chip.gem{color:var(--cy)}
+.sp{flex:1}
+.notice{margin:10px 14px 0;padding:10px 14px;border-radius:12px;background:linear-gradient(90deg,#3b2a7a,#1f2b5c);border:1px solid #5b47b8;font-size:15px}
+.tabs{display:flex;gap:6px;padding:10px 14px 0;overflow-x:auto}
+.tab{background:var(--card);border:2px solid var(--line);border-radius:12px 12px 0 0;padding:10px 16px;font-size:16px;font-weight:700;color:var(--mut);white-space:nowrap}
+.tab.on{background:var(--card2);color:var(--tx);border-color:var(--pri)}
+.pane{flex:1;overflow-y:auto;padding:14px;border-top:2px solid var(--pri);-webkit-overflow-scrolling:touch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.gcard{position:relative;background:linear-gradient(160deg,var(--card2),var(--card));border:2px solid var(--line);border-radius:var(--r);padding:16px;text-align:left;display:flex;flex-direction:column;gap:6px;min-height:150px;transition:transform .1s}
+.gcard:active{transform:scale(.97)}
+.gcard.main{border-color:#e0a800;background:linear-gradient(160deg,#3a2e0e,#1f2b5c 60%)}
+.gcard.team{border-color:var(--pur);background:linear-gradient(160deg,#3a1f6e,#1f2b5c 60%)}
+.gcard.one{border-color:#2de2e6;background:linear-gradient(160deg,#0e3a3a,#1f2b5c 60%)}
+.gcard .ic{font-size:44px;line-height:1}
+.gcard .tt{font-size:21px}
+.gcard .ds{color:var(--mut);font-size:13px;line-height:1.4}
+.gcard .bd{position:absolute;top:10px;right:10px;font-size:12px;padding:3px 8px;border-radius:999px;background:#0008;font-weight:700}
+.gcard .best{font-size:13px;color:var(--acc);font-weight:700}
+.gcard.lock{filter:grayscale(1) brightness(.6)}
+.gcard.lock::after{content:'🔒 선생님이 잠금';position:absolute;inset:auto 10px 10px auto;font-size:13px}
+.sec{font-size:20px;margin:6px 0 12px;display:flex;align-items:center;gap:8px}
+.sec small{color:var(--mut);font-family:'Noto Sans KR';font-size:13px}
+.box{background:var(--card);border:2px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.bar{height:16px;background:#0a0f26;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--cy));border-radius:999px;transition:width .4s}
+.bar.red>i{background:linear-gradient(90deg,#ff4d6d,#ff9b54)}
+.stat{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.stat .si{font-size:38px;text-align:center}
+.stat .sn{font-size:19px}
+.stat .se{color:var(--mut);font-size:13px;margin:2px 0 6px}
+.pips{display:flex;gap:3px}
+.pips i{flex:1;height:10px;border-radius:3px;background:#0a0f26;border:1px solid var(--line)}
+.pips i.on{background:var(--acc);border-color:var(--acc)}
+.rankRow{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:12px;border-radius:14px;background:var(--card);border:2px solid var(--line);margin-bottom:8px}
+.rankRow .no{font-size:28px;text-align:center}
+.rankRow.me{border-color:var(--acc)}
+.tbar{height:10px;border-radius:999px;background:linear-gradient(90deg,var(--acc),#ff8a3d);margin-top:6px}
+/* ---------- 게임 ---------- */
+#scrGame{background:#000}
+#hud{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:8px 10px;z-index:5;pointer-events:none}
+#hud>*{pointer-events:auto}
+#hudT{background:#000a;border-radius:10px;padding:6px 12px;font-weight:700;font-size:15px;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb{background:#000a;border:1px solid #fff3;border-radius:10px;width:42px;height:42px;font-size:20px}
+.hb.act{border-color:var(--acc);color:var(--acc)}
+#cv{width:100%;height:100%;display:block;touch-action:none}
+#gameUI{position:absolute;inset:0;pointer-events:none;z-index:4}
+#gameUI .gbtn{pointer-events:auto;position:absolute;touch-action:none}
+#gameUI *{touch-action:none}
+/* ---------- 모달 ---------- */
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+.modal.on{display:flex}
+.mbox{background:var(--card);border:3px solid var(--line);border-radius:22px;padding:22px;width:min(560px,96vw);max-height:92vh;overflow-y:auto;box-shadow:0 30px 80px #000c;animation:pop .2s}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.mbox h2{margin:0 0 12px;font-family:'Jua';font-weight:400;font-size:28px;text-align:center}
+.mbtns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.mbtns .btn{flex:1;min-width:120px}
+/* 퀴즈 */
+#quizModal{z-index:60}
+#quizModal .mbox{border-color:var(--acc);width:min(680px,96vw)}
+.qhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700}
+.qcat{background:var(--pri);padding:4px 10px;border-radius:999px;font-size:14px}
+.qstar{color:var(--acc)}
+.qtxt{font-size:clamp(20px,3.2vw,28px);line-height:1.45;margin:14px 0 18px;font-weight:700;word-break:keep-all;min-height:2.9em}
+.qch{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qch button{background:var(--card2);border:3px solid var(--line);border-radius:14px;padding:16px 12px;font-size:clamp(16px,2.4vw,20px);font-weight:700;text-align:left;min-height:66px;word-break:keep-all}
+.qch button b{display:inline-block;width:28px;height:28px;border-radius:50%;background:#0006;text-align:center;line-height:28px;margin-right:8px;font-size:15px}
+.qch button.ok{background:#11603a;border-color:var(--ok)}
+.qch button.no{background:#6b1a2b;border-color:var(--bad)}
+/* 시간 막대: 색(그라데이션)은 고정, 오른쪽부터 어두운 덮개가 부드럽게 덮어 옴 (색이 눌리며 드륵드륵 바뀌던 현상 수정) */
+.qtime{position:relative;height:10px;background:linear-gradient(90deg,var(--bad),var(--acc),var(--ok));border-radius:999px;overflow:hidden}
+.qtime i{position:absolute;inset:0;background:#0a0f26;transform-origin:100% 50%;transform:scaleX(0);will-change:transform}
+.qexp{margin-top:12px;color:var(--mut);min-height:2.9em;line-height:1.45;font-size:16px}
+.qctx{text-align:center;color:var(--acc);font-family:'Jua';font-size:20px;margin-bottom:6px}
+/* 토스트 */
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{background:#000d;border:2px solid var(--acc);border-radius:12px;padding:10px 16px;font-weight:700;animation:pop .2s;max-width:90vw;text-align:center}
+/* 스킬 카드 */
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tpick button{background:var(--card2);border:3px solid var(--line);border-radius:16px;padding:12px 8px;color:inherit;text-align:center;font-size:15px}
+.tpick button.full{opacity:.4}
+.tpick .tn{font-family:'Jua',sans-serif;font-size:24px}
+.tpick .mm{font-size:12px;color:var(--mut);min-height:16px}
+.skill{background:var(--card2);border:3px solid var(--line);border-radius:16px;padding:14px 8px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.skill .ic{font-size:40px}
+.skill .nm{font-family:'Jua';font-size:19px}
+.skill .ds{font-size:13px;color:var(--mut);word-break:keep-all}
+.skill:active{border-color:var(--acc)}
+/* 교사 */
+#scrTeacher{background:#0b1026}
+.tgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
+@media(max-width:900px){.tgrid{grid-template-columns:1fr}}
+.toggle{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:2px solid var(--line);border-radius:999px;padding:6px 12px;margin:4px;font-size:14px;font-weight:700}
+.toggle.on{background:#11603a;border-color:var(--ok)}
+.stuTbl{width:100%;border-collapse:collapse;font-size:14px}
+.stuTbl th,.stuTbl td{padding:6px;border-bottom:1px solid var(--line);text-align:center}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#555}
+.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.tv{position:fixed;inset:0;background:radial-gradient(circle at 50% 0,#2a3a8a,#0b1026 70%);z-index:70;padding:3vh 4vw;display:none;flex-direction:column}
+.tv.on{display:flex}
+.tvRow{display:grid;grid-template-columns:8vw 1fr 14vw;align-items:center;gap:2vw;margin-bottom:2vh;background:#18224acc;border-radius:2vh;padding:1.6vh 2vw;border:3px solid var(--line)}
+.tvRow .n{font-size:6vh;text-align:center}
+.tvRow .t{font-family:'Jua';font-size:5vh}
+.tvRow .s{font-family:'Jua';font-size:6vh;color:var(--acc);text-align:right}
+.input{background:var(--bg2);border:2px solid var(--line);border-radius:10px;padding:10px;color:var(--tx);font-size:16px;width:100%}
+/* 방 목록 */
+.roomItem{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;background:var(--card2);border:2px solid var(--line);margin-bottom:8px}
+/* ================= 트라이 아레나 ================= */
+#scrHome{align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#2a3a8a 0,#0b1026 60%);overflow-y:auto}
+select.input{appearance:none;-webkit-appearance:none}
+.input.big{font-size:22px;padding:14px;text-align:center;border-radius:12px}
+.teamPick{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.teamPick button{background:var(--bg2);border:3px solid var(--line);border-radius:12px;padding:12px 0;font-family:'Jua';font-size:22px}
+.teamPick button.on{border-color:var(--acc);background:#3a2e0e;color:var(--acc)}
+#scrTeam{background:linear-gradient(180deg,#0e1533,#0b1026)}
+.chip.dbl{background:#3a2e0e;border-color:var(--acc);color:var(--acc);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}
+#tmBoss{padding:10px 14px 0}
+.bossBox{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;background:linear-gradient(160deg,#3a1420,#18224a 70%);border:2px solid #7a2c40;border-radius:var(--r);padding:10px 14px}
+.bossBox .em{font-size:54px;line-height:1;filter:drop-shadow(0 4px 8px #000)}
+.bossBox.hit .em{animation:shake .4s}
+@keyframes shake{20%{transform:translate(-6px,2px) rotate(-8deg)}40%{transform:translate(6px,-2px) rotate(8deg)}60%{transform:translate(-4px,1px)}80%{transform:translate(4px,0)}}
+.bossBox .nm2{font-family:'Jua';font-size:20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bossBox .nm2 small{font-family:'Noto Sans KR';font-size:13px;color:var(--mut)}
+.hpbar{position:relative;height:26px;background:#0a0f26;border-radius:999px;overflow:hidden;border:2px solid #000;margin:6px 0}
+.hpbar>i{display:block;height:100%;border-radius:999px;transition:width .5s,background .5s}
+.hpbar>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;text-shadow:0 1px 2px #000}
+.roles{display:flex;gap:6px;flex-wrap:wrap}
+.rchip{background:#0a0f26;border:2px solid var(--line);border-radius:999px;padding:3px 10px;font-size:14px;font-weight:700}
+.rchip.ok{border-color:var(--ok);color:var(--ok)}
+.rchip.lack{border-color:var(--bad);color:#ffb3c0}
+.bossMsg{margin-top:8px;padding:10px 12px;border-radius:12px;font-weight:700;text-align:center}
+.bossMsg.shield{background:#1f2b5c;border:2px dashed var(--cy);color:var(--cy)}
+.bossMsg.wait{background:#1f2b5c;border:2px solid var(--line);color:var(--mut)}
+.bossGo{width:100%;margin-top:8px;font-size:24px;animation:pulse 1s infinite}
+.stageDots{display:flex;gap:4px;font-size:18px}
+/* 두뇌 */
+.qwrap{max-width:760px;margin:0 auto}
+.qwait{text-align:center;font-family:'Jua';font-size:26px;color:var(--mut);padding:40px 10px;line-height:1.6}
+.qres{font-family:'Jua';font-size:26px;text-align:center;min-height:36px;margin-top:10px}
+/* 몸 */
+.stepT{font-family:'Jua';font-size:19px;margin:14px 0 8px;display:flex;gap:8px;align-items:center}
+.stepT b{background:var(--pri);border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.exGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.exBtn{background:var(--card2);border:3px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center;font-weight:700;font-size:15px;line-height:1.35}
+.exBtn .ic{font-size:30px;display:block}
+.exBtn small{color:var(--mut);font-weight:400;display:block}
+.exBtn.on{border-color:var(--acc);background:#3a2e0e}
+.exBtn.pair{border-style:dashed}
+.who{display:flex;gap:8px;flex-wrap:wrap}
+.who button{background:var(--card2);border:3px solid var(--line);border-radius:999px;padding:10px 16px;font-weight:700;font-size:17px}
+.who button.on{border-color:var(--ok);background:#11603a}
+.who button:disabled{opacity:.3}
+.cnt{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cnt .numBox{font-family:'Jua';font-size:44px;min-width:110px;text-align:center;background:#0a0f26;border:3px solid var(--acc);border-radius:14px;padding:4px 10px;color:var(--acc)}
+.cnt button{min-width:64px}
+/* 게임 */
+.gcard .left{font-size:13px;color:var(--acc);font-weight:700}
+.gcard.off{filter:grayscale(1) brightness(.55)}
+/* 카드 */
+.vcard{background:linear-gradient(160deg,#3a2e0e,#1f2b5c 70%);border:3px solid var(--acc);border-radius:18px;padding:16px;text-align:center}
+.vcard .ic{font-size:56px}
+.vcard .nm{font-family:'Jua';font-size:26px;color:var(--acc)}
+.vcard .ds{color:var(--mut);margin:6px 0 12px;word-break:keep-all}
+.feed div{padding:6px 0;border-bottom:1px solid var(--line);font-size:15px}
+.feed small{color:var(--mut);margin-right:6px}
+/* 역할 정하기 */
+.rosterRow{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;margin-bottom:8px}
+.rosterRow .no{font-family:'Jua';font-size:20px;text-align:center;color:var(--mut)}
+.rosterRow input{background:var(--bg2);border:2px solid var(--line);border-radius:10px;padding:10px;color:var(--tx);font-size:18px;width:100%;user-select:text;-webkit-user-select:text}
+.roleSel{display:flex;gap:4px}
+.roleSel button{background:var(--card2);border:2px solid var(--line);border-radius:10px;padding:8px 10px;font-size:15px;font-weight:700;white-space:nowrap}
+.roleSel button.on{border-color:var(--acc);background:#3a2e0e;color:var(--acc)}
+/* 보스전 */
+#bossOv{position:fixed;inset:0;z-index:40;background:radial-gradient(circle at 50% 0,#5a1428,#0b1026 75%);display:none;flex-direction:column;align-items:center;padding:14px;overflow-y:auto}
+#bossOv.on{display:flex}
+#bossOv .bem{font-size:90px;line-height:1;animation:float 2s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+#bossOv .bt{font-family:'Jua';font-size:30px;text-align:center}
+#bossOv .hold{background:#000a;border:2px solid var(--bad);border-radius:14px;padding:10px 14px;margin:8px 0;font-weight:700;text-align:center;word-break:keep-all;max-width:760px}
+#bossOv .pips{font-size:34px;letter-spacing:6px;margin:4px 0}
+#bossOv .qcard{background:var(--card);border:3px solid var(--acc);border-radius:22px;padding:18px;width:min(760px,96vw)}
+/* 교사 */
+.wGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.wCard{background:var(--card2);border:3px solid var(--line);border-radius:16px;padding:12px;text-align:center}
+.wCard.on{border-color:var(--acc);background:#3a2e0e}
+.wCard .ic{font-size:40px}
+.wCard .nm{font-family:'Jua';font-size:18px}
+.wCard .st{color:var(--acc);letter-spacing:2px}
+.wCard small{color:var(--mut);display:block;font-size:12px;line-height:1.4;margin-top:4px}
+.tTeams{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px}
+.tTeam{background:var(--card);border:2px solid var(--line);border-radius:var(--r);padding:12px}
+.tTeam .h{display:flex;gap:8px;align-items:center;font-family:'Jua';font-size:20px;flex-wrap:wrap}
+.tTeam .names{color:var(--mut);font-size:13px;margin:4px 0;line-height:1.5}
+.tTeam .bts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cfgGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.cfgGrid label{font-size:13px;color:var(--mut);display:flex;flex-direction:column;gap:4px}
+.cfgGrid input,.numIn{background:var(--bg2);border:2px solid var(--line);border-radius:10px;padding:8px;color:var(--tx);font-size:16px;width:100%;user-select:text;-webkit-user-select:text}
+#hPw{user-select:text;-webkit-user-select:text}
+/* 큰 화면 */
+#scrTV{background:radial-gradient(circle at 50% 0,#2a3a8a,#0b1026 70%);padding:2vh 2.5vw}
+.tvHead{display:flex;align-items:center;gap:2vw;margin-bottom:1.5vh}
+.tvTitle{font-size:5vh;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvTimer{font-size:7vh;color:var(--acc);min-width:18vw;text-align:right}
+.tvTimer.low{color:var(--bad);animation:pulse 1s infinite}
+.tvCard{font-size:2.6vh;font-weight:700;background:#3a2e0e;border:2px solid var(--acc);color:var(--acc);border-radius:999px;padding:.8vh 1.6vw;white-space:nowrap}
+.tvCard:empty{display:none}
+#tvRows{flex:1;display:flex;flex-direction:column;gap:1.4vh}
+.tvR{flex:1;display:grid;grid-template-columns:12vw 8vw 1fr 27vw;align-items:center;gap:1.5vw;background:#18224acc;border:3px solid var(--line);border-radius:2vh;padding:.6vh 1.5vw;position:relative;min-height:0}
+.tvR.hit{animation:tvhit .5s}
+@keyframes tvhit{0%{background:#ff4d6d;transform:translateX(0)}25%{transform:translateX(-10px)}50%{transform:translateX(10px)}75%{transform:translateX(-5px)}100%{background:#18224acc}}
+.tvR.done{border-color:var(--acc);background:#3a2e0ecc}
+.tvR .tn{font-family:'Jua';font-size:5vh;text-align:center;white-space:nowrap}
+.tvR .tn span{font-size:3.6vh;margin-right:.4vw}
+.tvR .be{font-size:7vh;text-align:center;line-height:1}
+.tvR .mid{min-width:0}
+.tvR .bn{font-family:'Jua';font-size:2.8vh;display:flex;gap:1vw;align-items:center;white-space:nowrap;overflow:hidden}
+.tvR .bn small{font-family:'Noto Sans KR';font-size:2vh;color:var(--cy);font-weight:700}
+.tvR .hpbar{height:4.4vh;margin:.5vh 0 0}
+.tvR .hpbar>span{font-size:2.4vh}
+.tvR .rt{display:flex;flex-direction:column;gap:.4vh;font-size:2.2vh;font-weight:700;align-items:flex-end}
+.tvR .rt .roles{justify-content:flex-end;flex-wrap:nowrap}
+.tvR .rchip{font-size:1.9vh;padding:.2vh .8vw}
+.tvR .fly{position:absolute;left:45%;top:10%;font-family:'Jua';font-size:6vh;color:#ffd0d8;text-shadow:0 0 12px #ff4d6d;animation:fly 1s forwards;pointer-events:none}
+@keyframes fly{to{transform:translateY(-6vh);opacity:0}}
+.tvBanner{position:fixed;inset:0;z-index:75;background:#050816f5;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4vw}
+.tvBanner.on{display:flex;animation:pop .25s}
+.tvBanner .big{font-family:'Jua';font-size:11vh;color:var(--acc);text-shadow:0 0 40px #ffcc3388;line-height:1.2}
+.tvBanner .mid2{font-family:'Jua';font-size:6vh;margin-top:2vh}
+.tvBanner .em{font-size:20vh;line-height:1.1}
+.tvFinal{width:min(1100px,92vw)}
+.tvFinal .fr{display:grid;grid-template-columns:12vh 1fr auto;gap:2vw;align-items:center;font-family:'Jua';font-size:5.5vh;padding:1vh 2vw;border-radius:2vh;background:#18224a;border:3px solid var(--line);margin-bottom:1.2vh;text-align:left}
+.tvFinal .fr:first-child{border-color:var(--acc);background:#3a2e0e}
+/* ===== 국기 문제 ===== */
+.flagBox{display:flex;justify-content:center;margin:2px 0 12px}
+.flagImg{height:clamp(90px,18vh,150px);max-width:90%;border-radius:8px;box-shadow:0 4px 16px #0008;border:2px solid #ffffff22;background:#fff}
+.flagEmoji{font-size:clamp(90px,16vh,140px);line-height:1;text-align:center;margin:0 0 10px}
+/* ===== 역할 룰렛 ===== */
+.rlChips{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.rlChip{font-size:13px;font-weight:700;border-radius:999px;padding:2px 9px;border:2px solid;background:#0a0f26}
+.rlChip.good{border-color:#2fd27a;color:#9ff0c2}.rlChip.bad{border-color:#ff4d6d;color:#ffb3c0}.rlChip.fun{border-color:#a78bfa;color:#d8c4ff}
+.rlRow{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.rlRow:last-child{border-bottom:0}
+.rlIc{font-size:30px;width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;border:3px solid}
+.rlIc.good{border-color:#2fd27a}.rlIc.bad{border-color:#ff4d6d}.rlIc.fun{border-color:#a78bfa}
+.wheelWrap{--wr:min(150px,36vw);position:relative;width:calc(var(--wr) * 2);height:calc(var(--wr) * 2);margin:22px auto 6px}
+.wheelPin{position:absolute;left:50%;top:-24px;transform:translateX(-50%);font-size:30px;color:var(--acc);z-index:3;text-shadow:0 2px 6px #000}
+.wheel{position:absolute;inset:0;border-radius:50%;border:6px solid #ffcc33;box-shadow:0 0 0 4px #000,0 10px 30px #000a}
+.wheelIc{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,4vw,24px)}
+.wheelHub{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:#0b1026;border:4px solid #ffcc33;display:flex;align-items:center;justify-content:center;font-size:26px}
+.wheelRes{text-align:center;min-height:96px;margin-top:8px}
+.wheelKind{font-family:'Jua';font-size:20px}
+.wheelName{font-size:32px;margin:2px 0;animation:pop .3s}
+.wheelDesc{color:var(--mut);word-break:keep-all}
+/* ===== 몸 탭 ===== */
+.bodyHead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.exBtn{position:relative}
+.exBtn:disabled{opacity:.35}
+.exTag{position:absolute;top:4px;right:4px;font-size:11px;background:var(--acc);color:#000;border-radius:999px;padding:1px 6px;font-weight:900}
+/* ===== 카메라 ===== */
+#camOv{position:fixed;inset:0;z-index:85;background:#05081a;display:none;flex-direction:column}
+#camOv.on{display:flex}
+.camTop{display:flex;gap:8px;align-items:center;padding:8px 10px;padding-top:max(8px,env(safe-area-inset-top))}
+.camTitle{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.camStage{position:relative;flex:1;min-height:0;margin:0 auto;max-width:100%;aspect-ratio:4/3;max-height:calc(100vh - 150px);background:#000;border-radius:14px;overflow:hidden}
+.camStage video,.camStage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.camNum{position:absolute;right:14px;top:8px;font-size:clamp(60px,16vh,130px);color:var(--acc);text-shadow:0 4px 16px #000;line-height:1}
+.camNum.pop{animation:pop .3s}
+.camMsg{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-weight:900;font-size:clamp(16px,3vh,24px);text-shadow:0 2px 6px #000;padding:0 10px}
+.camBig{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(70px,22vh,180px);color:#fff;text-shadow:0 4px 20px #000;text-align:center;pointer-events:none}
+.camBig button{pointer-events:auto}
+.camBot{display:flex;gap:8px;align-items:center;padding:10px;flex-wrap:wrap;justify-content:flex-end;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.camGoal{flex:1;color:var(--mut);font-size:15px;min-width:160px}
+.camBot .btn.g{font-size:22px;padding:12px 26px}
+#camOv.failed #camSave,#camOv.failed #camReset,#camOv.failed #camFlip{display:none}
+.camBtns{display:flex;gap:8px;margin-top:16px;align-items:stretch}
+.camBtns #bdCam{flex:1;margin:0}
+.camBtns #bdPermit{white-space:nowrap;font-size:17px;padding:0 16px}
+.camBtns a.btn{flex:1;margin:0;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;color:#03240f}
+
+html,body{overflow:auto}
+#home{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
+#home .ic{font-size:90px;line-height:1}
+#home h1{font-family:'Jua';font-weight:400;font-size:clamp(28px,6vw,44px);margin:0}
+#home .who{font-size:22px;font-weight:700;color:var(--acc)}
+#home .tip{color:var(--mut);line-height:1.6;max-width:560px;word-break:keep-all}
+#home .btn{font-size:24px;padding:18px 30px}
+#res{font-family:'Jua';font-size:clamp(26px,5vw,40px);min-height:1.2em}
+#res small{display:block;font-family:'Noto Sans KR';font-size:16px;color:var(--mut);margin-top:6px}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+</style>
+</head>
+<body>
+<div id="home">
+  <div class="ic" id="hIc">📷</div>
+  <h1 id="hName">트라이 아레나 카메라</h1>
+  <div class="who" id="hWho"></div>
+  <div id="res"></div>
+  <div class="row" id="hBtns"><button class="btn g jua" id="hGo">📷 카메라 켜고 세기 시작</button></div>
+  <div class="tip" id="hTip">태블릿을 2~3m 떨어진 곳에 세우고 몸 전체가 화면에 나오게 해요.<br>처음에 카메라 허용 창이 뜨면 <b style="color:var(--acc)">허용</b>을 눌러 주세요.</div>
+</div>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+<div id="toast"></div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(m, ms) { const d = document.createElement('div'); d.className = 'toast'; d.innerHTML = m; $('#toast').appendChild(d); setTimeout(() => d.remove(), ms || 2200); }
+function openModal(h) { $('#mbox').innerHTML = h; $('#modal').classList.add('on'); }
+function closeModal() { $('#modal').classList.remove('on'); }
+let AC = null;
+function beep(f, d, type, vol) { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), g = AC.createGain(); o.type = type || 'sine'; o.frequency.value = f; g.gain.value = vol || 0.05; o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + (d || 0.1)); } catch (e) { } }
+const SFX = { ok: () => beep(880, .08), up: () => { beep(660, .08); setTimeout(() => beep(990, .12), 90); }, tap: () => beep(520, .04), no: () => beep(200, .15, 'square') };
+</script>
+<script>
+
+/* =========================================================
+ *  📷 카메라로 운동 개수 세기 (MediaPipe 자세 인식 · 태블릿 안에서만 처리, 영상은 어디에도 보내지 않음)
+ * ========================================================= */
+const CamCount = (function () {
+  const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+  const P = (l, i, asp) => { const p = l && l[i]; return p ? { x: p.x * asp, y: p.y, v: p.visibility == null ? 1 : p.visibility } : null; };
+  const seen = (th, ...ps) => ps.every(p => p && p.v > th);
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, v: Math.min(a.v, b.v) });
+  /** b 에서 잰 a-b-c 각도 (0~180) */
+  function ang(a, b, c) {
+    const x1 = a.x - b.x, y1 = a.y - b.y, x2 = c.x - b.x, y2 = c.y - b.y;
+    const d = Math.hypot(x1, y1) * Math.hypot(x2, y2);
+    return d ? Math.acos(clampN((x1 * x2 + y1 * y2) / d, -1, 1)) * 180 / Math.PI : 180;
+  }
+  /** a→b 선이 바닥(가로)과 이루는 각 (0 = 누움, 90 = 섬) */
+  const tilt = (a, b) => Math.atan2(Math.abs(b.y - a.y), Math.abs(b.x - a.x) + 1e-9) * 180 / Math.PI;
+  /** 한 사람의 주요 관절. 잘 보이는 쪽 몸(best)을 고름 */
+  function body(l, asp, th) {
+    th = th == null ? 0.5 : th;
+    const g = i => P(l, i, asp);
+    const L = { s: g(11), e: g(13), w: g(15), h: g(23), k: g(25), a: g(27) };
+    const R = { s: g(12), e: g(14), w: g(16), h: g(24), k: g(26), a: g(28) };
+    const sv = o => ['s', 'e', 'w', 'h', 'k', 'a'].reduce((t, k) => t + (o[k] ? o[k].v : 0), 0);
+    const best = sv(L) >= sv(R) ? L : R;
+    const sh = seen(th, L.s, R.s) ? mid(L.s, R.s) : best.s;
+    const hp = seen(th, L.h, R.h) ? mid(L.h, R.h) : best.h;
+    return { L, R, best, sh, hp, th };
+  }
+  function knee(B) {
+    const a = [B.L, B.R].filter(S => seen(B.th, S.h, S.k, S.a)).map(S => ang(S.h, S.k, S.a));
+    return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  }
+  /** 허벅지 세로 길이 ÷ 정강이 세로 길이 (서 있으면 약 1, 깊이 앉으면 0에 가까움) — 앞에서 찍어도 앉은 깊이를 앎 */
+  function depth(B) {
+    const a = [B.L, B.R].filter(S => seen(B.th, S.h, S.k, S.a)).map(S => (S.k.y - S.h.y) / Math.max(0.02, S.a.y - S.k.y));
+    return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  }
+  function elbow(B) { const S = B.best; return seen(B.th, S.s, S.e, S.w) ? ang(S.s, S.e, S.w) : null; }
+  function torso(B) { return seen(B.th, B.sh, B.hp) ? tilt(B.sh, B.hp) : null; }
+  function line(B) { const S = B.best; return seen(B.th, S.s, S.h, S.a) ? ang(S.s, S.h, S.a) : null; }
+  function size(l) { const B = body(l, 1, 0); return B.sh && B.hp ? dist(B.sh, B.hp) * Math.min(B.sh.v, B.hp.v) : 0; }
+  /** 가장 크게 보이는 사람 (1인 운동) */
+  function main(poses) { return poses && poses.length ? poses.slice().sort((a, b) => size(b) - size(a))[0] : null; }
+  /** 두 사람 (화면 왼쪽부터) */
+  function two(poses, asp) {
+    if (!poses || poses.length < 2) return null;
+    return poses.slice().sort((a, b) => size(b) - size(a)).slice(0, 2)
+      .sort((a, b) => (body(a, asp, 0).hp || { x: 0 }).x - (body(b, asp, 0).hp || { x: 0 }).x);
+  }
+
+  const NEED_ALL = '몸 전체가 화면에 나오게 조금 뒤로 물러나 주세요';
+  const NEED_SIDE = '옆모습이 보이게 태블릿을 옆에 세워 주세요';
+  const NEED_TWO = '두 사람이 모두 화면에 나오게 해 주세요';
+
+  /** 운동마다 세는 방법. update(poses, asp, ms) → { msg } , this.n = 개수 */
+  const MAKERS = {
+    squat() {
+      let st = 'up';
+      return { n: 0, update(ps, asp) {
+        const l = main(ps); if (!l) return { msg: NEED_ALL };
+        const B = body(l, asp), k = knee(B), r = depth(B), t = torso(B);
+        if (k == null || r == null) return { msg: NEED_ALL };
+        if (st === 'up' && (k < 110 || r < 0.45) && (t == null || t > 40)) st = 'down';
+        else if (st === 'down' && k > 150 && r > 0.8) { st = 'up'; this.n++; }
+        return { msg: st === 'down' ? '⬆️ 일어나요!' : '⬇️ 무릎 90°까지 앉아요' };
+      } };
+    },
+    pushup() {
+      let st = 'up';
+      return { n: 0, update(ps, asp) {
+        const l = main(ps); if (!l) return { msg: NEED_SIDE };
+        const B = body(l, asp), t = torso(B), e = elbow(B);
+        if (t == null || e == null) return { msg: NEED_SIDE };
+        if (t > 45) return { msg: '엎드려서 시작해요' };
+        if (st === 'up' && e < 100) st = 'down';
+        else if (st === 'down' && e > 145) { st = 'up'; this.n++; }
+        return { msg: st === 'down' ? '⬆️ 밀어 올려요!' : '⬇️ 팔꿈치 90°까지 내려가요' };
+      } };
+    },
+    jack() {
+      let st = 'closed';
+      return { n: 0, update(ps, asp) {
+        const l = main(ps); if (!l) return { msg: NEED_ALL };
+        const B = body(l, asp), L = B.L, R = B.R;
+        if (!seen(0.5, L.s, R.s, L.w, R.w, L.a, R.a)) return { msg: NEED_ALL };
+        const sw = dist(L.s, R.s) || 0.1, feet = Math.abs(L.a.x - R.a.x), sy = (L.s.y + R.s.y) / 2;
+        const up = L.w.y < sy && R.w.y < sy, down = L.w.y > sy && R.w.y > sy;
+        if (st === 'closed' && up && feet > 1.5 * sw) st = 'open';
+        else if (st === 'open' && down && feet < 1.25 * sw) { st = 'closed'; this.n++; }
+        return { msg: st === 'open' ? '팔 내리고 다리 모으기' : '팔 위로, 다리 벌리기!' };
+      } };
+    },
+    mount() {
+      const leg = { L: 'back', R: 'back' }; let did = { L: false, R: false };
+      return { n: 0, update(ps, asp) {
+        const l = main(ps); if (!l) return { msg: NEED_SIDE };
+        const B = body(l, asp, 0.3), t = torso(B);
+        if (t == null) return { msg: NEED_SIDE };
+        if (t > 50) return { msg: '엎드려서 시작해요' };
+        ['L', 'R'].forEach(sd => {
+          const S = B[sd]; if (!seen(0.3, S.s, S.h, S.k)) return;
+          const a = ang(S.s, S.h, S.k);
+          if (leg[sd] === 'back' && a < 100) { leg[sd] = 'in'; did[sd] = true; }
+          else if (leg[sd] === 'in' && a > 140) leg[sd] = 'back';
+        });
+        if (did.L && did.R) { this.n++; did = { L: false, R: false }; }
+        return { msg: '무릎을 가슴 쪽으로, 양발 번갈아!' };
+      } };
+    },
+    leg() {
+      let st = 'down';
+      return { n: 0, update(ps, asp) {
+        const l = main(ps); if (!l) return { msg: NEED_SIDE };
+        const B = body(l, asp), S = B.best, t = torso(B);
+        if (t == null || !seen(0.5, S.s, S.h, S.a)) return { msg: NEED_SIDE };
+        if (t > 40) return { msg: '바닥에 누워서 시작해요' };
+        const a = ang(S.s, S.h, S.a);
+        if (st === 'down' && a < 125) st = 'up';
+        else if (st === 'up' && a > 155) { st = 'down'; this.n++; }
+        return { msg: st === 'up' ? '⬇️ 천천히 내려요' : '⬆️ 다리를 올려요' };
+      } };
+    },
+    burpee() {
+      let st = 'stand';
+      return { n: 0, update(ps, asp) {
+        const l = main(ps); if (!l) return { msg: NEED_ALL };
+        const B = body(l, asp), t = torso(B), k = knee(B);
+        if (t == null) return { msg: NEED_ALL };
+        if (st === 'stand' && t < 35) st = 'plank';
+        else if (st === 'plank' && t > 60 && (k == null || k > 150)) { st = 'stand'; this.n++; }
+        return { msg: st === 'plank' ? '⬆️ 다리 모으고 일어나요!' : '⬇️ 앉았다가 다리를 뒤로!' };
+      } };
+    },
+    plank() {
+      let sec = 0, last = 0;
+      return { n: 0, update(ps, asp, ms) {
+        const dt = last ? Math.min(0.5, (ms - last) / 1000) : 0; last = ms;
+        const l = main(ps); if (!l) return { msg: NEED_SIDE };
+        const B = body(l, asp), t = torso(B), ln = line(B);
+        if (t == null || ln == null) return { msg: NEED_SIDE };
+        const good = t < 35 && ln > 150;
+        if (good) sec += dt;
+        this.n = Math.floor(sec);
+        return { msg: good ? '좋아요! 그대로 버텨요 🧱' : ln <= 150 && t < 35 ? '엉덩이를 일자로!' : '엎드려서 몸을 일자로' };
+      } };
+    },
+    psquat() {
+      const st = ['up', 'up'], did = [false, false];
+      return { n: 0, update(ps, asp) {
+        const two_ = two(ps, asp); if (!two_) return { msg: NEED_TWO };
+        for (let i = 0; i < 2; i++) {
+          const B = body(two_[i], asp), k = knee(B), r = depth(B); if (k == null || r == null) return { msg: NEED_TWO };
+          if (st[i] === 'up' && (k < 115 || r < 0.5)) st[i] = 'down';
+          else if (st[i] === 'down' && k > 150 && r > 0.8) { st[i] = 'up'; did[i] = true; }
+        }
+        if (did[0] && did[1]) { this.n++; did[0] = did[1] = false; }
+        return { msg: '등을 맞대고 함께 앉았다 일어나요' };
+      } };
+    },
+    psitup() {
+      const st = ['down', 'down'], did = [false, false];
+      return { n: 0, update(ps, asp) {
+        const two_ = two(ps, asp); if (!two_) return { msg: NEED_TWO };
+        for (let i = 0; i < 2; i++) {
+          const t = torso(body(two_[i], asp)); if (t == null) return { msg: NEED_TWO };
+          if (st[i] === 'down' && t > 55) { st[i] = 'up'; did[i] = true; }
+          else if (st[i] === 'up' && t < 30) st[i] = 'down';
+        }
+        if (did[0] && did[1]) { this.n++; did[0] = did[1] = false; }
+        return { msg: '둘이 함께 일어나 손바닥 치기!' };
+      } };
+    },
+    hi5() {
+      let st = 'down';
+      return { n: 0, update(ps, asp) {
+        const two_ = two(ps, asp); if (!two_) return { msg: NEED_TWO };
+        const up = [];
+        for (let i = 0; i < 2; i++) {
+          const B = body(two_[i], asp, 0.3), t = torso(B);
+          if (t == null) return { msg: NEED_TWO };
+          if (t > 50) return { msg: '둘 다 마주 보고 플랭크 자세!' };
+          up.push([B.L, B.R].some(S => seen(0.3, S.s, S.e, S.w) && S.w.y < S.s.y + 0.5 * (dist(S.s, S.e) + dist(S.e, S.w))));
+        }
+        if (st === 'down' && up[0] && up[1]) st = 'up';
+        else if (st === 'up' && !up[0] && !up[1]) { st = 'down'; this.n++; }
+        return { msg: st === 'up' ? '손 내리고 다시!' : '동시에 손을 들어 하이파이브!' };
+      } };
+    }
+  };
+  function make(key) {
+    const m = MAKERS[key];
+    if (!m) return null;
+    const c = m();
+    let lastN = 0, lastAt = 0;
+    const inner = c.update.bind(c);
+    return {
+      get n() { return c.n; },
+      update(poses, asp, ms) {
+        const before = c.n;
+        const r = inner(poses || [], asp || 1, ms || 0) || {};
+        if (c.n > before && key !== 'plank') {      // 너무 빠른 두 번 세기 막기
+          if (ms - lastAt < 250) c.n = before; else lastAt = ms;
+        }
+        lastN = c.n;
+        return r;
+      }
+    };
+  }
+  return { make, keys: Object.keys(MAKERS), _t: { ang, tilt } };
+})();
+
+/* ---------- 카메라 화면 ---------- */
+const Cam = {
+  VER: '0.10.14',
+  MODEL: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+  lmP: null, stream: null, raf: 0, facing: 'user', counter: null, ex: null, max: 0, onDone: null, onHand: null, startAt: 0, lastVT: -1, drawn: 0,
+  load() {
+    if (Cam.lmP) return Cam.lmP;
+    const base = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + Cam.VER;
+    Cam.lmP = (async () => {
+      let mod = null, err = null;
+      for (const f of ['vision_bundle.mjs', 'vision_bundle.js']) {
+        try { mod = await import(base + '/' + f); if (mod && mod.PoseLandmarker) break; mod = null; } catch (e) { err = e; mod = null; }
+      }
+      if (!mod) throw err || new Error('vision');
+      const files = await mod.FilesetResolver.forVisionTasks(base + '/wasm');
+      const opt = d => ({ baseOptions: { modelAssetPath: Cam.MODEL, delegate: d }, runningMode: 'VIDEO', numPoses: 2, minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+      try { return await mod.PoseLandmarker.createFromOptions(files, opt('GPU')); }
+      catch (e) { return await mod.PoseLandmarker.createFromOptions(files, opt('CPU')); }
+    })();
+    Cam.lmP.catch(() => { Cam.lmP = null; });
+    return Cam.lmP;
+  },
+  ui() {
+    if ($('#camOv')) return;
+    const d = document.createElement('div');
+    d.id = 'camOv';
+    d.innerHTML = `<div class="camTop"><button class="hb" id="camX" title="닫기">✕</button><div class="jua camTitle" id="camTitle"></div><div class="sp"></div>
+        <button class="hb" id="camFlip" title="앞·뒤 카메라 바꾸기">🔄</button><button class="btn sm y jua" id="camHand">✍️ 손으로 입력</button></div>
+      <div class="camStage" id="camStage"><video id="camV" playsinline muted autoplay></video><canvas id="camC"></canvas>
+        <div class="camNum jua" id="camNum">0</div><div class="camMsg" id="camMsg"></div><div class="camBig jua" id="camBig"></div></div>
+      <div class="camBot"><div class="camGoal" id="camGoal"></div><button class="btn d jua" id="camReset">↺ 다시 세기</button><button class="btn g jua" id="camSave">✅ 기록하기</button></div>`;
+    document.body.appendChild(d);
+    $('#camX').onclick = () => Cam.close();
+    $('#camHand').onclick = () => { const n = Cam.counter ? Cam.counter.n : 0, f = Cam.onHand; Cam.close(); if (f) f(n); };
+    $('#camFlip').onclick = () => { Cam.facing = Cam.facing === 'user' ? 'environment' : 'user'; Cam.startStream(); };
+    $('#camReset').onclick = () => { Cam.counter = CamCount.make(Cam.ex.key); Cam.countdown(); };
+    $('#camSave').onclick = () => { const n = Math.min(Cam.counter ? Cam.counter.n : 0, Cam.max); if (n < 1) { toast('아직 0' + Cam.ex.unit + '이에요'); return; } const f = Cam.onDone; Cam.close(); if (f) f(n); };
+  },
+  msg(t) { const el = $('#camMsg'); if (el) el.textContent = t || ''; },
+  extUrl: '',
+  /** 이 화면(iframe)이 카메라를 막고 있는지 (크롬은 미리 알 수 있음, 사파리는 한 번 실패해 봐야 앎) */
+  blocked() {
+    try { if (document.featurePolicy && document.featurePolicy.allowsFeature && !document.featurePolicy.allowsFeature('camera')) return true; } catch (e) { }
+    try { return localStorage.getItem('ta_cam_blocked') === '1'; } catch (e) { return false; }
+  },
+  /** 카메라 허용 확인: 허용 창을 띄우고 결과를 알려 줌 */
+  async permit() {
+    const res = { ok: false, why: '', state: '' };
+    try { if (navigator.permissions && navigator.permissions.query) res.state = (await navigator.permissions.query({ name: 'camera' })).state; } catch (e) { }
+    try { if (document.featurePolicy && document.featurePolicy.allowsFeature && !document.featurePolicy.allowsFeature('camera')) { res.why = 'policy'; return res; } } catch (e) { }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { res.why = window.isSecureContext === false ? 'insecure' : 'nomedia'; return res; }
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      st.getTracks().forEach(t => t.stop());
+      res.ok = true;
+    } catch (e) { res.why = (e && e.name) || 'Error'; res.detail = e && e.message; }
+    return res;
+  },
+  async permitModal() {
+    openModal(`<h2>📷 카메라 허용하기</h2><div class="qwait" style="padding:20px">허용 창이 뜨면 <b style="color:var(--acc)">허용</b>을 눌러 주세요…</div>`);
+    const r = await Cam.permit();
+    const steps = `<div class="box" style="text-align:left;line-height:1.7;font-size:15px;margin-top:10px">
+      <b>🤖 갤럭시 탭 (크롬)</b><br>주소창 왼쪽 아이콘 → 권한(사이트 설정) → 카메라 → 허용<br>안 되면: 태블릿 설정 → 애플리케이션 → Chrome → 권한 → 카메라 → 허용<br>
+      <b>🍎 아이패드 (사파리)</b><br>주소창 왼쪽 '가가' → 웹 사이트 설정 → 카메라 → 허용<br>안 되면: 설정 → Safari → 카메라 → 허용<br>
+      <span style="color:var(--mut)">바꾼 뒤에는 새로고침하고 다시 눌러 주세요.</span></div>`;
+    let h;
+    if (r.ok) h = `<h2>✅ 카메라 허용 완료!</h2><div style="text-align:center;font-size:18px">이제 <b>📷 카메라 켜고 세기 시작</b>을 누르면 돼요.</div>`;
+    else if (r.why === 'policy') h = `<h2>🚫 이 화면이 카메라를 막고 있어요</h2><div style="text-align:center;line-height:1.6;word-break:keep-all">구글 앱스 스크립트 화면 안에서는 카메라를 쓸 수 없게 되어 있어요.<br>선생님께 알려 주세요. (코드: policy)</div>`;
+    else if (r.why === 'NotAllowedError' || r.why === 'SecurityError') h = `<h2>🔒 카메라가 막혀 있어요</h2><div style="text-align:center;line-height:1.6;word-break:keep-all">${r.state === 'denied' ? '예전에 <b>차단</b>을 눌러서 막혀 있어요. 아래처럼 허용으로 바꿔 주세요.' : '허용 창이 뜨지 않았다면 기기 설정에서 브라우저의 카메라 권한을 확인해 주세요.'}</div>${steps}<div style="color:var(--mut);font-size:12px;text-align:center;margin-top:6px">(코드: ${esc(r.why)} / ${esc(r.state || '-')})</div>`;
+    else if (r.why === 'NotFoundError' || r.why === 'OverconstrainedError') h = `<h2>📷 카메라를 찾지 못했어요</h2><div style="text-align:center">이 기기에 카메라가 없거나 꺼져 있어요.</div>`;
+    else if (r.why === 'NotReadableError' || r.why === 'AbortError') h = `<h2>📷 다른 앱이 카메라를 쓰고 있어요</h2><div style="text-align:center;word-break:keep-all">카메라 앱이나 다른 탭을 닫고 다시 눌러 주세요.</div>`;
+    else h = `<h2>😥 카메라를 켤 수 없어요</h2>${steps}<div style="color:var(--mut);font-size:12px;text-align:center;margin-top:6px">(코드: ${esc(r.why)} / ${esc(r.state || '-')})</div>`;
+    openModal(h + `<div class="mbtns"><button class="btn g jua" onclick="closeModal()">확인</button></div>`);
+    return r.ok;
+  },
+  /** ex: 운동, who: 이름, max: 인정 최대 개수, onDone(n): 기록, onHand(n): 손으로 입력으로 바꾸기 */
+  async open(ex, who, max, onDone, onHand, extUrl) {
+    Cam.ui();
+    Cam.extUrl = extUrl || '';
+    Cam.ex = ex; Cam.max = max; Cam.onDone = onDone; Cam.onHand = onHand;
+    Cam.counter = CamCount.make(ex.key);
+    $('#camTitle').textContent = `${ex.icon} ${ex.name} · ${who}`;
+    $('#camGoal').textContent = `1세트 ${ex.per}${ex.unit} · 한 번에 최대 ${max}${ex.unit}`;
+    $('#camNum').textContent = '0';
+    $('#camBig').textContent = '';
+    $('#camOv').classList.add('on'); $('#camOv').classList.remove('failed');
+    Cam.msg('📷 카메라를 켜는 중…');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Cam.fail('이 화면에서는 카메라를 쓸 수 없어요.');
+    const okStream = await Cam.startStream();
+    if (!okStream) return;
+    Cam.msg('🧠 동작 인식 준비 중… (처음 한 번은 10초쯤 걸려요)');
+    let lm;
+    try { lm = await Cam.load(); } catch (e) { return Cam.fail('동작 인식 프로그램을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'); }
+    if (!$('#camOv').classList.contains('on')) return;
+    Cam.lm = lm;
+    Cam.countdown();
+    Cam.loop();
+  },
+  async startStream() {
+    Cam.stopStream();
+    try {
+      Cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: Cam.facing, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+    } catch (e) {
+      try { if (e && e.name === 'NotAllowedError' && window.self !== window.top) localStorage.setItem('ta_cam_blocked', '1'); } catch (x) { }
+      Cam.fail((e && e.name === 'NotAllowedError' ? '카메라가 허용되지 않았어요. 닫고 [📷 카메라 허용하기]를 눌러 주세요.' : '카메라를 켤 수 없어요.') + ' (' + ((e && e.name) || 'Error') + ')');
+      return false;
+    }
+    const v = $('#camV');
+    v.srcObject = Cam.stream;
+    try { await v.play(); } catch (e) { }
+    const mirror = Cam.facing === 'user';
+    v.style.transform = $('#camC').style.transform = mirror ? 'scaleX(-1)' : 'none';
+    return true;
+  },
+  stopStream() { if (Cam.stream) { Cam.stream.getTracks().forEach(t => t.stop()); Cam.stream = null; } },
+  fail(text) {
+    cancelAnimationFrame(Cam.raf); Cam.raf = 0;
+    $('#camOv').classList.add('failed');
+    Cam.msg('');
+    $('#camBig').innerHTML = `<div style="font-size:22px;line-height:1.5;padding:0 20px;word-break:keep-all">😥 ${esc(text)}</div><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px">${Cam.extUrl ? `<a class="btn g jua" id="camFailExt" href="${esc(Cam.extUrl)}" target="_blank" rel="noopener" style="text-decoration:none">📷 새 창에서 카메라 열기</a>` : ''}<button class="btn y jua" id="camFailHand">✍️ 손으로 입력하기</button></div>`;
+    $('#camFailHand').onclick = () => $('#camHand').click();
+    const fx = $('#camFailExt'); if (fx) fx.onclick = () => setTimeout(() => Cam.close(), 300);
+  },
+  countdown() {
+    Cam.startAt = performance.now() + 3200;
+    const big = $('#camBig');
+    const tick = () => {
+      const left = Cam.startAt - performance.now();
+      if (!$('#camOv').classList.contains('on')) return;
+      if (left > 0) { big.textContent = Math.ceil(left / 1000); setTimeout(tick, 100); }
+      else { big.textContent = '시작!'; SFX.up(); setTimeout(() => { if (big.textContent === '시작!') big.textContent = ''; }, 700); }
+    };
+    $('#camNum').textContent = '0';
+    tick();
+  },
+  loop() {
+    cancelAnimationFrame(Cam.raf);
+    const v = $('#camV'), c = $('#camC'), ctx = c.getContext('2d');
+    const step = () => {
+      if (!$('#camOv').classList.contains('on') || !Cam.lm) return;
+      Cam.raf = requestAnimationFrame(step);
+      if (v.readyState < 2 || !v.videoWidth || v.currentTime === Cam.lastVT) return;
+      Cam.lastVT = v.currentTime;
+      if (c.width !== v.videoWidth) { c.width = v.videoWidth; c.height = v.videoHeight; $('#camStage').style.aspectRatio = v.videoWidth + ' / ' + v.videoHeight; }
+      const now = performance.now();
+      let res;
+      try { res = Cam.lm.detectForVideo(v, now); } catch (e) { return; }
+      const poses = (res && res.landmarks) || [];
+      Cam.draw(ctx, poses, c.width, c.height);
+      if (now < Cam.startAt) return;
+      const before = Cam.counter.n;
+      const r = Cam.counter.n >= Cam.max ? { msg: `최대 ${Cam.max}${Cam.ex.unit}! ✅ 기록하기를 눌러요` } : Cam.counter.update(poses, v.videoWidth / v.videoHeight, now);
+      const n = Math.min(Cam.counter.n, Cam.max);
+      if (n !== before) { $('#camNum').textContent = n; $('#camNum').classList.remove('pop'); void $('#camNum').offsetWidth; $('#camNum').classList.add('pop'); if (Cam.ex.unit === '개') SFX.ok(); else if (n % 5 === 0) SFX.tap(); }
+      Cam.msg(r.msg || '');
+    };
+    Cam.raf = requestAnimationFrame(step);
+  },
+  draw(ctx, poses, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    const E = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [25, 27], [24, 26], [26, 28]];
+    poses.forEach((l, k) => {
+      ctx.lineWidth = Math.max(3, w / 160); ctx.strokeStyle = k ? '#7be0ff' : '#ffcc33'; ctx.fillStyle = '#fff';
+      E.forEach(([a, b]) => { const p = l[a], q = l[b]; if (!p || !q || (p.visibility || 1) < 0.4 || (q.visibility || 1) < 0.4) return; ctx.beginPath(); ctx.moveTo(p.x * w, p.y * h); ctx.lineTo(q.x * w, q.y * h); ctx.stroke(); });
+      [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28].forEach(i => { const p = l[i]; if (!p || (p.visibility || 1) < 0.4) return; ctx.beginPath(); ctx.arc(p.x * w, p.y * h, Math.max(4, w / 120), 0, 7); ctx.fill(); });
+    });
+  },
+  close() {
+    cancelAnimationFrame(Cam.raf); Cam.raf = 0;
+    Cam.stopStream();
+    const ov = $('#camOv'); if (ov) ov.classList.remove('on');
+    const v = $('#camV'); if (v) v.srcObject = null;
+    Cam.onDone = Cam.onHand = null;
+  }
+};
+
+</script>
+<script>
+'use strict';
+/* 트라이 아레나 팀 화면이 넘겨준 정보 */
+const Q = new URLSearchParams(location.search);
+const INFO = {
+  api: Q.get('api') || '', token: Q.get('t') || '', team: Q.get('team') || '',
+  ex: { key: Q.get('ex') || '', name: Q.get('en') || '운동', icon: Q.get('ei') || '💪', unit: Q.get('eu') || '개', per: Number(Q.get('ep')) || 10 },
+  who: Q.get('who') || '', names: Q.get('wn') || '', max: Number(Q.get('max')) || 30
+};
+function jsonp(params) {
+  return new Promise((res, rej) => {
+    const cb = 'ta' + Date.now() + Math.floor(Math.random() * 1000);
+    const s = document.createElement('script');
+    const done = () => { clearTimeout(timer); delete window[cb]; s.remove(); };
+    const timer = setTimeout(() => { done(); rej(new Error('timeout')); }, 25000);
+    window[cb] = d => { done(); res(d); };
+    s.onerror = () => { done(); rej(new Error('net')); };
+    s.src = INFO.api + (INFO.api.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams(Object.assign({}, params, { action: 'cam', callback: cb })).toString();
+    document.head.appendChild(s);
+  });
+}
+function btns(h) { $('#hBtns').innerHTML = h; }
+function homeBtns() {
+  btns(`<button class="btn g jua" id="hGo">📷 카메라 켜고 세기 시작</button>`);
+  $('#hGo').onclick = start;
+}
+function closeBtn(label) { return `<button class="btn d jua" id="hClose">${label || '창 닫고 돌아가기'}</button>`; }
+function bindClose() { const b = $('#hClose'); if (b) b.onclick = () => { window.close(); setTimeout(() => toast('이 탭을 닫고 트라이 아레나 화면으로 돌아가 주세요', 4000), 300); }; }
+async function send(n) {
+  $('#res').innerHTML = `보내는 중… <small>${n}${esc(INFO.ex.unit)}</small>`;
+  btns('');
+  try {
+    const r = await jsonp({ op: 'body', token: INFO.token, ex: INFO.ex.key, who: INFO.who, count: n });
+    if (r && r.ok) {
+      SFX.up();
+      $('#res').innerHTML = `✅ ${r.counted}${esc(INFO.ex.unit)} 기록! 👊 보스에게 -${r.pts}<small>트라이 아레나 화면에 곧 반영돼요</small>`;
+      btns(`<button class="btn g jua" id="hAgain">📷 한 번 더 하기</button>` + closeBtn());
+      $('#hAgain').onclick = start; bindClose();
+    } else {
+      SFX.no();
+      $('#res').innerHTML = `😥 기록하지 못했어요<small>${esc((r && r.msg) || '')}</small>`;
+      btns(`<button class="btn y jua" id="hRetry">다시 보내기 (${n}${esc(INFO.ex.unit)})</button><button class="btn g jua" id="hAgain">📷 다시 세기</button>` + closeBtn());
+      $('#hRetry').onclick = () => send(n); $('#hAgain').onclick = start; bindClose();
+    }
+  } catch (e) {
+    $('#res').innerHTML = `😥 인터넷 연결을 확인해 주세요<small>센 개수 ${n}${esc(INFO.ex.unit)}는 아직 남아 있어요</small>`;
+    btns(`<button class="btn y jua" id="hRetry">다시 보내기</button>` + closeBtn());
+    $('#hRetry').onclick = () => send(n); bindClose();
+  }
+}
+function start() {
+  $('#res').innerHTML = '';
+  Cam.open(INFO.ex, INFO.names, INFO.max, n => send(n), n => {
+    $('#res').innerHTML = `✍️ 손으로 입력할게요<small>트라이 아레나 화면으로 돌아가 💪 몸 탭에서 입력해 주세요${n ? ` (카메라가 센 개수: ${n}${esc(INFO.ex.unit)})` : ''}</small>`;
+    btns(closeBtn('창 닫고 돌아가기')); bindClose();
+  });
+}
+window.addEventListener('load', () => {
+  if (!INFO.api || !INFO.token || !INFO.ex.key) {
+    $('#hName').textContent = '트라이 아레나 카메라';
+    $('#hWho').textContent = '';
+    $('#res').innerHTML = `이 화면은 트라이 아레나에서 열어야 해요<small>팀 태블릿의 💪 몸 탭 → 📷 카메라 켜고 세기 시작</small>`;
+    btns(''); return;
+  }
+  $('#hIc').textContent = INFO.ex.icon;
+  $('#hName').textContent = `${INFO.team} · ${INFO.ex.name}`;
+  $('#hWho').textContent = `🙋 ${INFO.names}`;
+  homeBtns();
+  Cam.load().catch(() => { });            // 동작 인식 프로그램을 미리 받아 둠
+});
+</script>
+</body>
+</html>
