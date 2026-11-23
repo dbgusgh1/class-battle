@@ -142,6 +142,24 @@
   body.fs .brand h1{font-size:22px}
   body.fs .center.muted{display:none}
   @media (display-mode: standalone){ body{padding-top:env(safe-area-inset-top)} }
+  /* 지금 상태판 (v7) */
+  .s-now{background:#fff;color:var(--ink);border-radius:20px;padding:8px 18px 10px;display:flex;flex-direction:column;align-items:center;gap:1px;flex:1 1 260px;max-width:440px;text-align:center}
+  .s-now .lbl{font-size:13px;font-weight:900;display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+  .s-now .pre{font-size:13px;font-weight:700;color:#7A5A44}
+  .s-now .gname{font-family:"Jua",sans-serif;font-weight:400;font-size:38px;line-height:1.1;color:#A63A22}
+  .s-now .vs{font-size:14px;font-weight:700}
+  .s-now.game{background:#FFF3C4;box-shadow:inset 0 0 0 4px #F2B33D;animation:nowPulse 1.6s ease-in-out var(--ph,0s) infinite}
+  .s-now.game .lbl{color:#A63A22}
+  .s-now.mine .gname{font-size:22px;color:#2F6B3A}
+  .s-now.stop .gname{font-size:22px;color:#A63A22}
+  .live{width:10px;height:10px;border-radius:50%;background:#E0563E;display:inline-block;animation:blink 1s steps(2) var(--ph,0s) infinite}
+  @keyframes blink{50%{opacity:.2}}
+  @keyframes nowPulse{50%{transform:scale(1.025)}}
+  .tv-now{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .tv-game{background:#FFF3C4;box-shadow:inset 0 0 0 4px #F2B33D;border-radius:22px;padding:12px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .tv-game .lbl{font-size:15px;font-weight:900;color:#A63A22;display:inline-flex;align-items:center;gap:8px}
+  .tv-game .vs{display:flex;align-items:center;gap:10px;font-family:"Jua",sans-serif;font-size:26px}
+  .tv-game .gname{font-family:"Jua",sans-serif;font-size:40px;color:#A63A22;line-height:1.1;margin-left:auto}
   /* 운동 그림 카드 (v6) */
   .exgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
   .ex2{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 8px 10px;border-radius:20px;border:3px solid var(--line);background:#fff;min-height:0}
@@ -201,7 +219,7 @@
 <div id="app"></div>
 <div id="err"></div>
 <script>
-/* 수정본 v6 (2026-11-23): 운동 카드에 움직이는 픽토그램 / v5: 아이콘 세트(칼·방패·미네랄·하트) / v4: 전체화면 버튼(F키) / v3 (2026-11-16): 노을 운동장 디자인 적용 / v2: 승인·취소 연타 방지 / 운동 버튼 대기시간 / 로그인 후 입장 / 방 코드 오류 안내 */
+/* 수정본 v7 (2026-11-23): 학생 탭 '지금 게임 진행 중/자원 모으는 중' 상태판 + TV 진행 중 배너 / v6: 운동 카드에 움직이는 픽토그램 / v5: 아이콘 세트(칼·방패·미네랄·하트) / v4: 전체화면 버튼(F키) / v3 (2026-11-16): 노을 운동장 디자인 적용 / v2: 승인·취소 연타 방지 / 운동 버튼 대기시간 / 로그인 후 입장 / 방 코드 오류 안내 */
 /* =====================================================================
    ① 설정 — 다른 선생님께 공유할 때는 이 블록만 바꾸면 됩니다.
    ===================================================================== */
@@ -627,8 +645,14 @@ function renderStudent(){
     const ok = '<span class="ok"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" style="fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
     return `<button class="ex2 ${cool?'cool':done?'done':''}" data-a="mine" data-k="${ex.key}" ${cool?'disabled':''} aria-label="${esc(ex.label)} 기록하기"><span class="pic">${PICTO[ex.key]||''}${w&&!fz?`<span class="cdn">${w}</span>`:''}${pair?'<span class="pair">2인</span>':''}${done&&!cool?ok:''}</span><span class="nm">${nm}</span><span class="rp">${reps} · 자원 +${ex.value}</span><span class="st">${st}</span></button>`; };
   const lockRow = (S.meta && S.meta.lock===false) ? `<div class="row" style="margin-bottom:10px"><span class="muted">팀 바꾸기:</span>${teamIdx().map(k=>`<button class="sm ${k===i?'btn-dark':''}" data-a="switchTeam" data-i="${k}">팀 ${k}</button>`).join('')}</div>` : '';
+  const games=Object.values(S.pending||{}).filter(p=>p&&p.type==='attack'&&(p.from===i||p.to===i)).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  let nowBox;
+  if(games.length){ const g=games[0]; const who = g.from===i ? `팀 ${i} → 팀 ${g.to} 공격 도전 중` : `팀 ${g.from}이(가) 우리 팀에 도전했어요!`;
+    nowBox=`<div class="s-now game" role="status"><span class="lbl"><i class="live"></i>지금 게임 진행 중</span><span class="pre">이번 미니게임은</span><b class="gname">${esc(g.game||'미니게임')}</b><span class="vs">${who}${games.length>1?` · 대기 ${games.length-1}개 더`:''}</span></div>`; }
+  else if(fz){ nowBox=`<div class="s-now stop" role="status"><span class="lbl">지금 상태</span><b class="gname">자원 생산 정지 중 (${mmss(fz)})</b></div>`; }
+  else { nowBox=`<div class="s-now mine" role="status"><span class="lbl">${ic('mineral',22)} 지금 자원 모으는 중</span><b class="gname">운동하고 미네랄 모으기!</b></div>`; }
   const stat=(l,v,c,n)=>`<div class="s-stat">${ic(n,34)}<div><span>${l}</span><b style="color:${c||'inherit'}">${v}</b></div></div>`;
-  return `${lockRow}<div class="s-head" style="background:${TEAM_COLORS[i-1]}"><div class="row" style="gap:14px"><div class="tbadge" style="color:${TEAM_COLORS[i-1]}">${i}</div><div><div class="jua s-title">팀 ${i} 화이팅!</div><div class="s-sub">${sub}</div></div></div><div class="s-stats">${stat('HP',hp,'#E0563E','heart')}${stat('자원',t.resource||0,'#5E3E99','mineral')}${stat('공격권',t.attack||0,'#A63A22','sword')}${stat('방어권',t.shield||0,'#2B5E96','shield')}</div></div>
+  return `${lockRow}<div class="s-head" style="background:${TEAM_COLORS[i-1]}"><div class="row" style="gap:14px"><div class="tbadge" style="color:${TEAM_COLORS[i-1]}">${i}</div><div><div class="jua s-title">팀 ${i} 화이팅!</div><div class="s-sub">${sub}</div></div></div>${nowBox}<div class="s-stats">${stat('HP',hp,'#E0563E','heart')}${stat('자원',t.resource||0,'#5E3E99','mineral')}${stat('공격권',t.attack||0,'#A63A22','sword')}${stat('방어권',t.shield||0,'#2B5E96','shield')}</div></div>
   ${fz?`<div class="warn" style="margin-bottom:12px">자원 생산 정지 중이에요. (${mmss(fz)} 남음)</div>`:''}
   <div class="cols wide">
   <div>
@@ -662,8 +686,14 @@ function renderStudent(){
   </div></div>`;
 }
 
+function tvNow(){
+  const games=Object.values(S.pending||{}).filter(p=>p&&p.type==='attack').sort((a,b)=>(a.ts||0)-(b.ts||0));
+  if(!games.length) return '';
+  const tb=k=>`<span class="tbadge s" style="background:${TEAM_COLORS[k-1]}">${k}</span>`;
+  return `<div class="tv-now" role="status">${games.slice(0,3).map(g=>`<div class="tv-game"><span class="lbl"><i class="live"></i>지금 게임 진행 중</span><span class="vs">${tb(g.from)}팀 ${g.from} ${ic('sword',30)} 팀 ${g.to}${tb(g.to)}</span><b class="gname">${esc(g.game||'미니게임')}</b></div>`).join('')}${games.length>3?`<div class="muted">대기 ${games.length-3}개 더</div>`:''}</div>`;
+}
 function renderProjector(){
-  return `${rankRows()}
+  return `${tvNow()}${rankRows()}
   <div class="cols"><div class="card"><h2>오늘의 전투 소식</h2>${newsBox(S.events,8)}</div>${requestPanel()}</div>
   <div class="cols" style="margin-top:0"><div class="card"><h2>전체 로그</h2>${logBox(S.logs)}${boxLegend()}</div><div class="card center">${classroomMap()}</div></div>`;
 }
